@@ -160,6 +160,48 @@ def step3_validate(session: Session, niche_candidate: str, ingest_result: dict) 
     return result
 
 
+def step4_intake(session: Session, validation_result: dict, ingest_result: dict) -> dict:
+    console.print(Panel("[bold]Step 4 — Creator Intake Questions[/bold]", style="blue"))
+
+    if session.get("step4_done"):
+        console.print("[dim]Step 4 already complete — loading from session.[/dim]")
+        return session.get("step4_result")
+
+    console.print("\nThese questions must be answered before synthesis. Answer on behalf of the creator or pass them along.\n")
+
+    answers = {}
+
+    answers["origin_story"] = ask(
+        "1. What is the specific moment or experience that led this creator to this topic? (Not the polished version — the real one)"
+    )
+    answers["contrarian_belief"] = ask(
+        "2. What does this creator believe that most people in this space get wrong?"
+    )
+    answers["hidden_credibility"] = ask(
+        "3. What has this creator done, experienced, or built that gives them credibility here that is NOT obvious from their public content?"
+    )
+    answers["ideal_reader"] = ask(
+        "4. Who is the single most specific reader this newsletter is for? Picture one person — who are they and what are they struggling with right now?"
+    )
+
+    # Gap-specific questions
+    if not validation_result.get("purchasing_power_confirmed"):
+        answers["purchasing_power_detail"] = ask(
+            "What products has this creator's audience bought, at what price point, and how did they respond? (or press Enter to skip)"
+        )
+
+    archetype_ambiguous = not ingest_result.get("category_suggestion")
+    if archetype_ambiguous:
+        answers["self_archetype"] = ask(
+            "How does this creator think of themselves: practitioner, learner, experimenter, or curator? (or press Enter to skip)"
+        )
+
+    session.set("step4_result", answers)
+    session.set("step4_done", True)
+    session.save()
+    return answers
+
+
 def main():
     parser = argparse.ArgumentParser(description="Strategy Agent")
     parser.add_argument("--creator", required=True, help="Creator slug (e.g. jane-doe)")
@@ -176,6 +218,9 @@ def main():
     # Steps 2 and 3
     competitor_result = step2_competitors(session, niche_candidate)
     validation_result = step3_validate(session, niche_candidate, ingest_result)
+
+    # Step 4
+    intake_answers = step4_intake(session, validation_result, ingest_result)
 
 
 if __name__ == "__main__":
