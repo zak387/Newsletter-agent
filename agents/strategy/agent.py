@@ -3,8 +3,11 @@
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
+
+import anthropic as _anthropic
 
 # Ensure the project root is on sys.path when running this file directly.
 _project_root = Path(__file__).resolve().parents[2]
@@ -36,7 +39,10 @@ def step0_ingest(session: Session) -> dict:
 
     if session.get("step0_done"):
         console.print("[dim]Step 0 already complete — loading from session.[/dim]")
-        return session.get("step0_result")
+        result = session.get("step0_result")
+        if result is None:
+            raise RuntimeError("Session claims step0 is done but step0_result is missing. Delete the session file and re-run.")
+        return result
 
     console.print("Enter the creator's public content URLs (one per line). Empty line to finish:")
     urls = []
@@ -67,7 +73,10 @@ def step1_niche(session: Session, ingest_result: dict) -> str:
 
     if session.get("step1_done"):
         console.print("[dim]Step 1 already complete — loading from session.[/dim]")
-        return session.get("niche_candidate")
+        niche = session.get("niche_candidate")
+        if niche is None:
+            raise RuntimeError("Session claims step1 is done but niche_candidate is missing. Delete the session file and re-run.")
+        return niche
 
     # Stage 1a — Category
     suggested_category = ingest_result.get("category_suggestion", "")
@@ -102,7 +111,10 @@ def step2_competitors(session: Session, niche_candidate: str) -> dict:
 
     if session.get("step2_done"):
         console.print("[dim]Step 2 already complete — loading from session.[/dim]")
-        return session.get("step2_result")
+        result = session.get("step2_result")
+        if result is None:
+            raise RuntimeError("Session claims step2 is done but step2_result is missing. Delete the session file and re-run.")
+        return result
 
     console.print("\n[dim]Running newsletter research subagent (this may take a minute)...[/dim]")
     result = run_newsletter_research(niche_candidate=niche_candidate)
@@ -127,9 +139,12 @@ def step3_validate(session: Session, niche_candidate: str, ingest_result: dict) 
 
     if session.get("step3_done"):
         console.print("[dim]Step 3 already complete — loading from session.[/dim]")
-        return session.get("step3_result")
+        result = session.get("step3_result")
+        if result is None:
+            raise RuntimeError("Session claims step3 is done but step3_result is missing. Delete the session file and re-run.")
+        return result
 
-    creator_context = ingest_result.get("content_summary", "") + " " + " ".join(ingest_result.get("audience_signals", []))
+    creator_context = (ingest_result.get("content_summary") or "") + " " + " ".join(ingest_result.get("audience_signals") or [])
 
     console.print("\n[dim]Running trend research subagent...[/dim]")
     result = run_trend_research(niche_candidate=niche_candidate, creator_context=creator_context)
@@ -150,7 +165,10 @@ def step3_validate(session: Session, niche_candidate: str, ingest_result: dict) 
             console.print(f"  • {s}")
         console.print("\nPlease supply additional context (products sold, price points, audience responses).")
         additional = ask("Supply purchasing power context (or type 'proceed' to continue without confirmation)")
-        if additional.lower() != "proceed":
+        if additional.lower() == "proceed":
+            # Operator explicitly chose to proceed without confirmation
+            result["purchasing_power_confirmed"] = False
+        else:
             result["purchasing_power_additional_context"] = additional
             result["purchasing_power_confirmed"] = True
 
@@ -165,7 +183,10 @@ def step4_intake(session: Session, validation_result: dict, ingest_result: dict)
 
     if session.get("step4_done"):
         console.print("[dim]Step 4 already complete — loading from session.[/dim]")
-        return session.get("step4_result")
+        result = session.get("step4_result")
+        if result is None:
+            raise RuntimeError("Session claims step4 is done but step4_result is missing. Delete the session file and re-run.")
+        return result
 
     console.print("\nThese questions must be answered before synthesis. Answer on behalf of the creator or pass them along.\n")
 
@@ -185,7 +206,7 @@ def step4_intake(session: Session, validation_result: dict, ingest_result: dict)
     )
 
     # Gap-specific questions
-    if not validation_result.get("purchasing_power_confirmed"):
+    if not validation_result.get("purchasing_power_confirmed") and not validation_result.get("purchasing_power_additional_context"):
         answers["purchasing_power_detail"] = ask(
             "What products has this creator's audience bought, at what price point, and how did they respond? (or press Enter to skip)"
         )
@@ -212,8 +233,6 @@ def step5_synthesise(
     learnings: list,
 ) -> dict:
     console.print(Panel("[bold]Step 5 — Synthesis Pass[/bold]", style="blue"))
-
-    import anthropic as _anthropic
 
     client = _anthropic.Anthropic()
 
@@ -270,11 +289,15 @@ Return ONLY a JSON object with these exact keys:
         messages=[{"role": "user", "content": prompt}],
     )
 
-    import re
     raw = message.content[0].text.strip()
     raw = re.sub(r"^```[a-zA-Z]*\n?", "", raw)
     raw = re.sub(r"\n?```$", "", raw)
-    brief = json.loads(raw.strip())
+    try:
+        brief = json.loads(raw.strip())
+    except json.JSONDecodeError as e:
+        console.print(f"\n[bold red]Synthesis failed — model returned malformed JSON.[/bold red]")
+        console.print(f"Raw output:\n{raw[:500]}")
+        raise RuntimeError(f"Synthesis JSON parse error: {e}") from e
 
     session.set("brief", brief)
     session.set("step5_done", True)
@@ -293,6 +316,13 @@ def step6_review(
     creator_slug: str,
 ) -> dict:
     console.print(Panel("[bold]Step 6 — Human Review[/bold]", style="blue"))
+
+    if session.get("locked"):
+        console.print("[dim]Brief already locked — loading from session.[/dim]")
+        brief = session.get("brief")
+        if brief is None:
+            raise RuntimeError("Session claims brief is locked but brief data is missing. Delete the session file and re-run.")
+        return brief
 
     round_number = 0
 
@@ -322,7 +352,7 @@ def step6_review(
         )
 
     # Write outputs
-    briefs_dir = Path("briefs") / creator_slug
+    briefs_dir = _project_root / "briefs" / creator_slug
     briefs_dir.mkdir(parents=True, exist_ok=True)
     md_path = briefs_dir / "positioning-brief.md"
     md_path.write_text(render_brief(brief), encoding="utf-8")
