@@ -48,7 +48,9 @@ def render_brief(brief: dict) -> str:
     pillars = brief.get("content_pillars") or []
     if pillars:
         for i, pillar in enumerate(pillars, 1):
-            lines.append(f"**{i}. {pillar['name']}** — {pillar['description']}")
+            name = pillar.get("name", "_Not yet completed_")
+            description = pillar.get("description", "_Not yet completed_")
+            lines.append(f"**{i}. {name}** — {description}")
     else:
         lines.append("_Not yet completed_")
     lines.append("")
@@ -57,7 +59,7 @@ def render_brief(brief: dict) -> str:
     lines += ["## Creator Archetype", ""]
     archetype = brief.get("creator_archetype")
     if archetype:
-        label = archetype["primary"]
+        label = archetype.get("primary", "_Not yet completed_")
         if archetype.get("secondary"):
             label += f" (with {archetype['secondary']} as modifier)"
         lines.append(f"**{label}**")
