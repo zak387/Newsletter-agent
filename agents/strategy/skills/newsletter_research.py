@@ -1,4 +1,5 @@
 import json
+import re
 import anthropic
 
 SYSTEM_PROMPT = """You are a newsletter competitive intelligence specialist. Your scope is newsletters ONLY — this includes individual creator newsletters, company newsletters, media newsletters, and any regular editorial publication.
@@ -45,8 +46,11 @@ def run_newsletter_research(niche_candidate: str) -> dict:
     )
 
     raw = message.content[0].text.strip()
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-    return json.loads(raw.strip())
+    raw = re.sub(r"^```[a-zA-Z]*\n?", "", raw)
+    raw = re.sub(r"\n?```$", "", raw)
+    data = json.loads(raw.strip())
+    required = {"competitors", "gap_analysis", "niche_depth_recommendation"}
+    missing = required - data.keys()
+    if missing:
+        raise ValueError(f"Model response missing required keys: {missing}")
+    return data

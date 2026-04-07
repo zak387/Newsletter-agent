@@ -1,4 +1,5 @@
 import json
+import re
 import anthropic
 
 SYSTEM_PROMPT = """You are a creator research specialist. Your job is to audit a creator's public content and extract signals about their niche, audience, and positioning.
@@ -39,8 +40,11 @@ def run_public_research(urls: list[str], human_context: str = "") -> dict:
     )
 
     raw = message.content[0].text.strip()
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-    return json.loads(raw.strip())
+    raw = re.sub(r"^```[a-zA-Z]*\n?", "", raw)
+    raw = re.sub(r"\n?```$", "", raw)
+    data = json.loads(raw.strip())
+    required = {"content_summary", "audience_signals", "gaps_flagged", "category_suggestion", "sub_niches"}
+    missing = required - data.keys()
+    if missing:
+        raise ValueError(f"Model response missing required keys: {missing}")
+    return data
