@@ -202,6 +202,86 @@ def step4_intake(session: Session, validation_result: dict, ingest_result: dict)
     return answers
 
 
+def step5_synthesise(
+    session: Session,
+    niche_candidate: str,
+    ingest_result: dict,
+    competitor_result: dict,
+    validation_result: dict,
+    intake_answers: dict,
+    learnings: list,
+) -> dict:
+    console.print(Panel("[bold]Step 5 — Synthesis Pass[/bold]", style="blue"))
+
+    import anthropic as _anthropic
+
+    client = _anthropic.Anthropic()
+
+    learnings_block = ""
+    if learnings:
+        learnings_block = "\n\nPrevious revision learnings to apply:\n" + json.dumps(learnings, indent=2)
+
+    prompt = f"""You are synthesising a positioning brief for a newsletter creator. Use ALL of the research and intake data below to fill every field. Where you cannot confirm a field from the data, leave the value as null.
+
+Niche candidate: {niche_candidate}
+
+Public research findings:
+{json.dumps(ingest_result, indent=2)}
+
+Competitor research:
+{json.dumps(competitor_result, indent=2)}
+
+Trend and validation data:
+{json.dumps(validation_result, indent=2)}
+
+Creator intake answers:
+{json.dumps(intake_answers, indent=2)}
+{learnings_block}
+
+Return ONLY a JSON object with these exact keys:
+{{
+  "newsletter_name": ["name1", "name2", "name3"],
+  "newsletter_name_rationale": ["rationale1", "rationale2", "rationale3"],
+  "niche_umbrella": "string or null",
+  "niche_rationale": "string or null",
+  "target_reader": "string or null",
+  "newsletter_statement": "string or null",
+  "why_exist": "string or null",
+  "why_creator": "string or null",
+  "content_pillars": [
+    {{"name": "string", "description": "string"}},
+    {{"name": "string", "description": "string"}},
+    {{"name": "string", "description": "string"}}
+  ],
+  "creator_archetype": {{
+    "primary": "Expert | Student | Experimenter | Tastemaker",
+    "secondary": "string or null",
+    "evidence": "string"
+  }},
+  "business_model": "string",
+  "competitor_insight": "string or null",
+  "comparable_newsletter": "string or null"
+}}"""
+
+    console.print("\n[dim]Running synthesis subagent...[/dim]")
+    message = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=4096,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    import re
+    raw = message.content[0].text.strip()
+    raw = re.sub(r"^```[a-zA-Z]*\n?", "", raw)
+    raw = re.sub(r"\n?```$", "", raw)
+    brief = json.loads(raw.strip())
+
+    session.set("brief", brief)
+    session.set("step5_done", True)
+    session.save()
+    return brief
+
+
 def main():
     parser = argparse.ArgumentParser(description="Strategy Agent")
     parser.add_argument("--creator", required=True, help="Creator slug (e.g. jane-doe)")
@@ -221,6 +301,17 @@ def main():
 
     # Step 4
     intake_answers = step4_intake(session, validation_result, ingest_result)
+
+    # Step 5
+    brief = step5_synthesise(
+        session=session,
+        niche_candidate=niche_candidate,
+        ingest_result=ingest_result,
+        competitor_result=competitor_result,
+        validation_result=validation_result,
+        intake_answers=intake_answers,
+        learnings=session.learnings,
+    )
 
 
 if __name__ == "__main__":
