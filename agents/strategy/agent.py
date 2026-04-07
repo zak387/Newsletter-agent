@@ -282,6 +282,60 @@ Return ONLY a JSON object with these exact keys:
     return brief
 
 
+def step6_review(
+    session: Session,
+    brief: dict,
+    niche_candidate: str,
+    ingest_result: dict,
+    competitor_result: dict,
+    validation_result: dict,
+    intake_answers: dict,
+    creator_slug: str,
+) -> dict:
+    console.print(Panel("[bold]Step 6 — Human Review[/bold]", style="blue"))
+
+    round_number = 0
+
+    while True:
+        round_number += 1
+        md = render_brief(brief)
+        console.print(Panel(md, title=f"Positioning Brief (Round {round_number})", style="white"))
+
+        feedback = ask('Review the brief above. Type feedback to revise, or "lock it" to finalise')
+
+        if feedback.strip().lower() in ("lock it", "lock", "done", "approve", "confirmed"):
+            break
+
+        # Store learning
+        session.append_learning({"round": round_number, "feedback": feedback})
+        session.save()
+
+        console.print("\n[dim]Applying feedback and regenerating brief...[/dim]")
+        brief = step5_synthesise(
+            session=session,
+            niche_candidate=niche_candidate,
+            ingest_result=ingest_result,
+            competitor_result=competitor_result,
+            validation_result=validation_result,
+            intake_answers=intake_answers,
+            learnings=session.learnings,
+        )
+
+    # Write outputs
+    briefs_dir = Path("briefs") / creator_slug
+    briefs_dir.mkdir(parents=True, exist_ok=True)
+    md_path = briefs_dir / "positioning-brief.md"
+    md_path.write_text(render_brief(brief), encoding="utf-8")
+
+    session.save_brief_json(brief)
+    session.set("locked", True)
+    session.save()
+
+    console.print(f"\n[bold green]Brief locked.[/bold green]")
+    console.print(f"Markdown: {md_path}")
+    return brief
+
+
 def main():
     parser = argparse.ArgumentParser(description="Strategy Agent")
     parser.add_argument("--creator", required=True, help="Creator slug (e.g. jane-doe)")
@@ -311,6 +365,18 @@ def main():
         validation_result=validation_result,
         intake_answers=intake_answers,
         learnings=session.learnings,
+    )
+
+    # Step 6
+    step6_review(
+        session=session,
+        brief=brief,
+        niche_candidate=niche_candidate,
+        ingest_result=ingest_result,
+        competitor_result=competitor_result,
+        validation_result=validation_result,
+        intake_answers=intake_answers,
+        creator_slug=creator_slug,
     )
 
 
