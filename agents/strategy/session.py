@@ -5,7 +5,9 @@ from pathlib import Path
 class Session:
     def __init__(self, creator_slug: str, base_dir: Path = None):
         self.creator_slug = creator_slug
-        self.base_dir = Path(base_dir) if base_dir else Path(".")
+        if "/" in creator_slug or "\\" in creator_slug or ".." in creator_slug:
+            raise ValueError(f"Invalid creator_slug: {creator_slug!r}")
+        self.base_dir = Path(base_dir).resolve() if base_dir else Path(".").resolve()
         self._dir = self.base_dir / ".agent" / creator_slug
         self._session_file = self._dir / "session.json"
         self._learnings_file = self._dir / "learnings.json"
@@ -15,9 +17,15 @@ class Session:
 
     def _load(self):
         if self._session_file.exists():
-            self._state = json.loads(self._session_file.read_text(encoding="utf-8"))
+            try:
+                self._state = json.loads(self._session_file.read_text(encoding="utf-8"))
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Corrupt session file {self._session_file}: {e}") from e
         if self._learnings_file.exists():
-            self.learnings = json.loads(self._learnings_file.read_text(encoding="utf-8"))
+            try:
+                self.learnings = json.loads(self._learnings_file.read_text(encoding="utf-8"))
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Corrupt session file {self._learnings_file}: {e}") from e
 
     def get(self, key: str, default=None):
         return self._state.get(key, default)
