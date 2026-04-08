@@ -14,6 +14,10 @@ import anthropic as _anthropic
 
 from agents.strategy.session import Session
 
+from rich.console import Console
+from rich.panel import Panel
+from rich.prompt import Prompt
+
 
 TASTEMAKER_PROMPT = """\
 You are a Voice Analyst. Your job is to study the creator's content pack and answer 20 targeted questions about how this creator thinks, writes, and sees the world — on their behalf. You are not interviewing anyone. You are reading the evidence and drawing conclusions from it.
@@ -268,6 +272,14 @@ what_matters_most must have exactly 3 items in this order:
 """
 
 
+console = Console()
+
+
+def ask(prompt: str) -> str:
+    """Pause and collect operator input."""
+    return Prompt.ask(f"\n[bold cyan]{prompt}[/bold cyan]")
+
+
 TOKEN_LIMIT = 80_000
 _CHARS_PER_TOKEN = 4
 
@@ -424,3 +436,174 @@ def extract_voice_profile_json(voice_profile_md: str, client=None) -> dict:
         raise RuntimeError(
             f"JSON parse error extracting voice profile structure: {e}\n\nRaw output:\n{raw[:500]}"
         ) from e
+
+
+def step_ingest_content_pack() -> str:
+    """Interactive step: operator chooses file or paste, returns content pack text."""
+    console.print(Panel("[bold]Content Pack Ingestion[/bold]", style="blue"))
+    console.print("How would you like to provide the content pack?")
+    console.print("  [bold]1[/bold] — File path (.md, .txt, or .pdf)")
+    console.print("  [bold]2[/bold] — Paste directly into the terminal")
+
+    while True:
+        choice = ask("Enter 1 or 2").strip()
+
+        if choice == "1":
+            file_path = ask("Enter the full file path").strip()
+            try:
+                raw = load_content_pack_from_file(file_path)
+                break
+            except FileNotFoundError as e:
+                console.print(f"[red]{e}[/red] — try again.")
+            except ValueError as e:
+                console.print(f"[red]{e}[/red] — try again.")
+
+        elif choice == "2":
+            console.print(
+                "\nPaste your content pack below. "
+                "When done, type [bold]END[/bold] on its own line and press Enter:"
+            )
+            lines = []
+            while True:
+                line = input()
+                if line.strip() == "END":
+                    break
+                lines.append(line)
+            raw = "\n".join(lines)
+            break
+
+        else:
+            console.print("[red]Please enter 1 or 2.[/red]")
+
+    estimated = estimate_tokens(raw)
+    console.print(f"\n[dim]Content pack loaded — estimated {estimated:,} tokens.[/dim]")
+
+    if estimated > TOKEN_LIMIT:
+        console.print(
+            f"\n[yellow]WARNING: Content pack is ~{estimated:,} tokens, "
+            f"which exceeds the {TOKEN_LIMIT:,} token limit.[/yellow]"
+        )
+        console.print("Options:")
+        console.print("  [bold]t[/bold] — Truncate to 80,000 tokens (from the start)")
+        console.print("  [bold]a[/bold] — Abort")
+        while True:
+            action = ask("Enter t or a").strip().lower()
+            if action == "t":
+                raw = apply_size_guard(raw, truncate=True)
+                console.print(f"[dim]Truncated to {estimate_tokens(raw):,} tokens.[/dim]")
+                break
+            elif action == "a":
+                console.print("Aborted.")
+                sys.exit(0)
+            else:
+                console.print("[red]Please enter t or a.[/red]")
+
+    return raw
+
+
+def step_review_loop(
+    session: WritingSession,
+    content_pack: str,
+    brief: dict,
+) -> str:
+    """Run the Tastemaker prompt and present a review loop. Returns the locked voice profile markdown."""
+    client = _anthropic.Anthropic()
+    round_number = 0
+
+    while True:
+        round_number += 1
+        console.print(f"\n[dim]Running Tastemaker Protocol (round {round_number})...[/dim]\n")
+
+        learnings_block = ""
+        if session.learnings:
+            learnings_block = (
+                "\n\nPrevious feedback to incorporate:\n"
+                + "\n".join(f"- {l.get('feedback', '')}" for l in session.learnings)
+            )
+
+        pack_with_learnings = content_pack + learnings_block
+        voice_profile_md = run_tastemaker(pack_with_learnings, brief, client=client)
+
+        console.print(Panel(voice_profile_md, title=f"Voice Profile (Round {round_number})", style="white"))
+
+        feedback = ask('Review the voice profile above. Type feedback to regenerate, or "save it" to finalise')
+
+        if feedback.strip().lower() in ("save it", "save", "done", "lock it", "lock"):
+            return voice_profile_md
+
+        session.append_learning({"round": round_number, "feedback": feedback})
+        session.save()
+
+
+def step_write_outputs(
+    creator_slug: str,
+    voice_profile_md: str,
+    base_dir: Path = None,
+) -> None:
+    """Write voice-profile.md and voice-profile.json to their canonical locations."""
+    base = Path(base_dir).resolve() if base_dir else _project_root
+    client = _anthropic.Anthropic()
+
+    # Operator-facing markdown
+    briefs_dir = base / "briefs" / creator_slug
+    briefs_dir.mkdir(parents=True, exist_ok=True)
+    md_path = briefs_dir / "voice-profile.md"
+    md_path.write_text(voice_profile_md, encoding="utf-8")
+    console.print(f"\n[dim]Markdown written: {md_path}[/dim]")
+
+    # Canonical JSON
+    console.print("[dim]Extracting structured JSON...[/dim]")
+    try:
+        profile_json = extract_voice_profile_json(voice_profile_md, client=client)
+    except RuntimeError as e:
+        console.print(f"\n[bold red]JSON extraction failed:[/bold red]\n{e}")
+        console.print("The markdown voice profile has been saved. Re-run to retry JSON extraction.")
+        return
+
+    agent_dir = base / ".agent" / creator_slug
+    agent_dir.mkdir(parents=True, exist_ok=True)
+    json_path = agent_dir / "voice-profile.json"
+    json_path.write_text(json.dumps(profile_json, indent=2, ensure_ascii=False), encoding="utf-8")
+    console.print(f"[dim]JSON written: {json_path}[/dim]")
+
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Writing Agent")
+    parser.add_argument("--creator", required=True, help="Creator slug (e.g. kyle-cleankitchennutrition)")
+    args = parser.parse_args()
+
+    creator_slug = args.creator
+    session = WritingSession(creator_slug=creator_slug)
+
+    console.print(Panel(f"[bold green]Writing Agent[/bold green]\nCreator: {creator_slug}", style="green"))
+
+    # Load positioning brief — exits with error if missing
+    brief = load_positioning_brief(creator_slug)
+    names = brief.get("newsletter_name") or ["—"]
+    niche = brief.get("niche_umbrella") or "—"
+    archetype = (brief.get("creator_archetype") or {}).get("primary") or "—"
+    console.print(f"[dim]Brief loaded — Name: {names[0]} | Niche: {niche} | Archetype: {archetype}[/dim]")
+
+    # Block 1 — Voice extraction
+    if session.get("block1_done"):
+        console.print("[dim]Block 1 already complete — voice profile already locked.[/dim]")
+    else:
+        content_pack = step_ingest_content_pack()
+        voice_profile_md = step_review_loop(session, content_pack, brief)
+        step_write_outputs(creator_slug, voice_profile_md)
+
+        session.set("block1_done", True)
+        session.save()
+
+        console.print(f"\n[bold green]Block 1 complete. Voice profile locked.[/bold green]")
+        console.print(f"  briefs/{creator_slug}/voice-profile.md")
+        console.print(f"  .agent/{creator_slug}/voice-profile.json")
+
+    # Block 2 stub
+    console.print("\n[dim]Block 2 (format selection) — coming soon.[/dim]")
+
+
+if __name__ == "__main__":
+    main()
