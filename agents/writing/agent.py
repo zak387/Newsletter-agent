@@ -369,10 +369,11 @@ def run_tastemaker(content_pack: str, brief: dict, client=None) -> str:
     if client is None:
         client = _anthropic.Anthropic()
 
+    archetype_obj = brief.get('creator_archetype') or {}
     creator_context = (
-        f"Archetype: {brief.get('creator_archetype', {}).get('primary', 'Unknown')}\n"
-        f"Niche: {brief.get('niche_umbrella', 'Unknown')}\n"
-        f"Target reader: {brief.get('target_reader', 'Unknown')}"
+        f"Archetype: {archetype_obj.get('primary', 'Unknown')}\n"
+        f"Niche: {brief.get('niche_umbrella') or 'Unknown'}\n"
+        f"Target reader: {brief.get('target_reader') or 'Unknown'}"
     )
 
     prompt = TASTEMAKER_PROMPT.format(
@@ -411,6 +412,8 @@ def extract_voice_profile_json(voice_profile_md: str, client=None) -> dict:
         messages=[{"role": "user", "content": prompt}],
     )
 
+    if not message.content:
+        raise RuntimeError("JSON extraction call returned no content blocks")
     raw = message.content[0].text.strip()
     raw = re.sub(r"^```[a-zA-Z]*\n?", "", raw)
     raw = re.sub(r"\n?```$", "", raw)
