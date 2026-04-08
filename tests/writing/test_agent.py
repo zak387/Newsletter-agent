@@ -50,3 +50,28 @@ def test_load_content_pack_from_file_unsupported(tmp_path):
     f.write_bytes(b"binary")
     with pytest.raises(ValueError, match="Unsupported file format"):
         load_content_pack_from_file(str(f))
+
+
+from unittest.mock import MagicMock, patch
+from agents.writing.agent import _extract_pdf_text
+
+
+def test_extract_pdf_text_joins_pages_and_handles_none(tmp_path):
+    """_extract_pdf_text joins pages with newline and treats None extract_text() as empty string."""
+    mock_page1 = MagicMock()
+    mock_page1.extract_text.return_value = "Page one text"
+    mock_page2 = MagicMock()
+    mock_page2.extract_text.return_value = None  # simulate page with no extractable text
+    mock_page3 = MagicMock()
+    mock_page3.extract_text.return_value = "Page three text"
+
+    mock_reader = MagicMock()
+    mock_reader.pages = [mock_page1, mock_page2, mock_page3]
+
+    fake_pdf = tmp_path / "fake.pdf"
+    fake_pdf.write_bytes(b"%PDF-fake")
+
+    with patch("pypdf.PdfReader", return_value=mock_reader):
+        result = _extract_pdf_text(fake_pdf)
+
+    assert result == "Page one text\n\nPage three text"
