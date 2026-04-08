@@ -3,7 +3,7 @@ def _field(value: str | None) -> str:
 
 
 def render_brief(brief: dict) -> str:
-    lines = ["# Positioning Brief", ""]
+    lines = ["# Strategy Brief", ""]
 
     # Newsletter name
     lines += ["## Newsletter Name", ""]
