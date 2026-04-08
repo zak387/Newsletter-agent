@@ -518,7 +518,7 @@ def step_review_loop(
         if session.learnings:
             learnings_block = (
                 "\n\nPrevious feedback to incorporate:\n"
-                + "\n".join(f"- {l.get('feedback', '')}" for l in session.learnings)
+                + "\n".join(f"- {entry.get('feedback', '')}" for entry in session.learnings)
             )
 
         pack_with_learnings = content_pack + learnings_block
@@ -555,7 +555,7 @@ def step_write_outputs(
     console.print("[dim]Extracting structured JSON...[/dim]")
     try:
         profile_json = extract_voice_profile_json(voice_profile_md, client=client)
-    except RuntimeError as e:
+    except (RuntimeError, Exception) as e:
         console.print(f"\n[bold red]JSON extraction failed:[/bold red]\n{e}")
         console.print("The markdown voice profile has been saved. Re-run to retry JSON extraction.")
         return
@@ -588,6 +588,9 @@ def main():
 
     # Block 1 — Voice extraction
     if session.get("block1_done"):
+        json_path = _project_root / ".agent" / creator_slug / "voice-profile.json"
+        if not json_path.exists():
+            console.print("[yellow]WARNING: Block 1 was marked complete but voice-profile.json is missing. JSON extraction may have failed on the previous run.[/yellow]")
         console.print("[dim]Block 1 already complete — voice profile already locked.[/dim]")
     else:
         content_pack = step_ingest_content_pack()
