@@ -372,11 +372,14 @@ def load_positioning_brief(creator_slug: str, base_dir: Path = None) -> dict:
     return json.loads(brief_path.read_text(encoding="utf-8"))
 
 
-def run_tastemaker(content_pack: str, brief: dict, client=None) -> str:
+def run_tastemaker(content_pack: str, brief: dict, client=None, learnings: list = None) -> str:
     """Run the Tastemaker Protocol prompt and return the full voice profile markdown.
 
     Streams output to console so the operator can watch progress.
     Returns the complete accumulated text.
+
+    learnings: list of dicts from previous review rounds. Injected at the prompt level
+    (not inside <content_pack>) so the model treats them as instructions, not creator content.
     """
     if client is None:
         client = _anthropic.Anthropic()
@@ -392,6 +395,11 @@ def run_tastemaker(content_pack: str, brief: dict, client=None) -> str:
         creator_context=creator_context,
         content_pack=content_pack,
     )
+
+    if learnings:
+        feedback_block = "\n\nOperator feedback from previous round to incorporate:\n" + \
+            "\n".join(f"- {entry.get('feedback', '')}" for entry in learnings)
+        prompt = prompt + feedback_block
 
     accumulated = []
     with client.messages.stream(
@@ -514,15 +522,9 @@ def step_review_loop(
         round_number += 1
         console.print(f"\n[dim]Running Tastemaker Protocol (round {round_number})...[/dim]\n")
 
-        learnings_block = ""
-        if session.learnings:
-            learnings_block = (
-                "\n\nPrevious feedback to incorporate:\n"
-                + "\n".join(f"- {entry.get('feedback', '')}" for entry in session.learnings)
-            )
-
-        pack_with_learnings = content_pack + learnings_block
-        voice_profile_md = run_tastemaker(pack_with_learnings, brief, client=client)
+        voice_profile_md = run_tastemaker(
+            content_pack, brief, client=client, learnings=session.learnings or None
+        )
 
         console.print(Panel(voice_profile_md, title=f"Voice Profile (Round {round_number})", style="white"))
 
@@ -539,10 +541,12 @@ def step_write_outputs(
     creator_slug: str,
     voice_profile_md: str,
     base_dir: Path = None,
+    client=None,
 ) -> None:
     """Write voice-profile.md and voice-profile.json to their canonical locations."""
     base = Path(base_dir).resolve() if base_dir else _project_root
-    client = _anthropic.Anthropic()
+    if client is None:
+        client = _anthropic.Anthropic()
 
     # Operator-facing markdown
     briefs_dir = base / "briefs" / creator_slug
