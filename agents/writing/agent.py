@@ -44,3 +44,22 @@ def _extract_pdf_text(path: Path) -> str:
     reader = pypdf.PdfReader(str(path))
     pages = [page.extract_text() or "" for page in reader.pages]
     return "\n".join(pages)
+
+
+def apply_size_guard(text: str, truncate: bool) -> str:
+    """Enforce the 80k token limit.
+
+    If text is within limit, returns it unchanged.
+    If over limit and truncate=True, truncates to exactly TOKEN_LIMIT tokens.
+    If over limit and truncate=False, raises ValueError.
+    """
+    token_count = estimate_tokens(text)
+    if token_count <= TOKEN_LIMIT:
+        return text
+    if truncate:
+        max_chars = TOKEN_LIMIT * _CHARS_PER_TOKEN
+        return text[:max_chars]
+    raise ValueError(
+        f"Content pack exceeds {TOKEN_LIMIT:,} token limit "
+        f"(estimated {token_count:,} tokens). Pass truncate=True to truncate."
+    )

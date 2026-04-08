@@ -75,3 +75,28 @@ def test_extract_pdf_text_joins_pages_and_handles_none(tmp_path):
         result = _extract_pdf_text(fake_pdf)
 
     assert result == "Page one text\n\nPage three text"
+
+
+from agents.writing.agent import apply_size_guard, TOKEN_LIMIT
+
+_CHARS_PER_TOKEN = 4  # mirrors agent constant for tests
+
+
+def test_apply_size_guard_under_limit():
+    text = "a" * (TOKEN_LIMIT * _CHARS_PER_TOKEN - 4)
+    # Should return text unchanged, no truncation needed
+    result = apply_size_guard(text, truncate=False)
+    assert result == text
+
+
+def test_apply_size_guard_over_limit_truncate():
+    # 80001 tokens worth of text
+    text = "a" * ((TOKEN_LIMIT + 1) * _CHARS_PER_TOKEN)
+    result = apply_size_guard(text, truncate=True)
+    assert estimate_tokens(result) == TOKEN_LIMIT
+
+
+def test_apply_size_guard_over_limit_no_truncate():
+    text = "a" * ((TOKEN_LIMIT + 1) * _CHARS_PER_TOKEN)
+    with pytest.raises(ValueError, match="Content pack exceeds"):
+        apply_size_guard(text, truncate=False)
