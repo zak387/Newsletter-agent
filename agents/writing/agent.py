@@ -2,7 +2,10 @@
 """Writing Agent — produces a voice profile and newsletter draft for a creator."""
 
 import sys
+import json
 from pathlib import Path
+
+from agents.strategy.session import Session
 
 _project_root = Path(__file__).resolve().parents[2]
 if str(_project_root) not in sys.path:
@@ -63,3 +66,37 @@ def apply_size_guard(text: str, truncate: bool) -> str:
         f"Content pack exceeds {TOKEN_LIMIT:,} token limit "
         f"(estimated {token_count:,} tokens). Pass truncate=True to truncate."
     )
+
+
+class WritingSession(Session):
+    """Session subclass that uses writing-specific filenames to avoid
+    collision with the strategy agent's session files."""
+
+    def _load(self):
+        # Override filenames before calling parent load
+        self._session_file = self._dir / "writing-session.json"
+        self._learnings_file = self._dir / "writing-learnings.json"
+        super()._load()
+
+    def save(self):
+        # Ensure correct filenames are set before saving
+        self._session_file = self._dir / "writing-session.json"
+        self._learnings_file = self._dir / "writing-learnings.json"
+        super().save()
+
+
+def load_positioning_brief(creator_slug: str, base_dir: Path = None) -> dict:
+    """Load the positioning brief produced by the strategy agent.
+
+    Exits with a clear error if the file does not exist.
+    """
+    base = Path(base_dir).resolve() if base_dir else _project_root
+    brief_path = base / ".agent" / creator_slug / "positioning-brief.json"
+    if not brief_path.exists():
+        print(
+            f"\nERROR: Positioning brief not found at {brief_path}\n"
+            f"Run the strategy agent first:\n"
+            f"  python agents/strategy/agent.py --creator {creator_slug}\n"
+        )
+        sys.exit(1)
+    return json.loads(brief_path.read_text(encoding="utf-8"))

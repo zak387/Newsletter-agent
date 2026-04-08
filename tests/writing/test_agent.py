@@ -100,3 +100,31 @@ def test_apply_size_guard_over_limit_no_truncate():
     text = "a" * ((TOKEN_LIMIT + 1) * _CHARS_PER_TOKEN)
     with pytest.raises(ValueError, match="Content pack exceeds"):
         apply_size_guard(text, truncate=False)
+
+
+import json
+from agents.writing.agent import WritingSession, load_positioning_brief
+
+
+def test_writing_session_uses_different_filenames(tmp_path):
+    session = WritingSession(creator_slug="test-creator", base_dir=tmp_path)
+    session.set("block1_done", True)
+    session.save()
+    assert (tmp_path / ".agent" / "test-creator" / "writing-session.json").exists()
+    assert (tmp_path / ".agent" / "test-creator" / "writing-learnings.json").exists()
+    # Strategy agent files must NOT be created
+    assert not (tmp_path / ".agent" / "test-creator" / "session.json").exists()
+
+
+def test_load_positioning_brief_missing(tmp_path):
+    with pytest.raises(SystemExit):
+        load_positioning_brief("test-creator", base_dir=tmp_path)
+
+
+def test_load_positioning_brief_found(tmp_path):
+    brief_dir = tmp_path / ".agent" / "test-creator"
+    brief_dir.mkdir(parents=True)
+    brief = {"newsletter_name": ["The Clean Label"], "niche_umbrella": "Personal transformation > clean eating", "creator_archetype": {"primary": "Experimenter"}}
+    (brief_dir / "positioning-brief.json").write_text(json.dumps(brief), encoding="utf-8")
+    result = load_positioning_brief("test-creator", base_dir=tmp_path)
+    assert result["newsletter_name"] == ["The Clean Label"]
