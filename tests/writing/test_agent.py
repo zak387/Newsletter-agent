@@ -117,8 +117,9 @@ def test_writing_session_uses_different_filenames(tmp_path):
 
 
 def test_load_positioning_brief_missing(tmp_path):
-    with pytest.raises(SystemExit):
+    with pytest.raises(SystemExit) as exc_info:
         load_positioning_brief("test-creator", base_dir=tmp_path)
+    assert exc_info.value.code == 1
 
 
 def test_load_positioning_brief_found(tmp_path):

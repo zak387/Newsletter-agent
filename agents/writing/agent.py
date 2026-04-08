@@ -90,6 +90,8 @@ def load_positioning_brief(creator_slug: str, base_dir: Path = None) -> dict:
 
     Exits with a clear error if the file does not exist.
     """
+    if "/" in creator_slug or "\\" in creator_slug or ".." in creator_slug:
+        raise ValueError(f"Invalid creator_slug: {creator_slug!r}")
     base = Path(base_dir).resolve() if base_dir else _project_root
     brief_path = base / ".agent" / creator_slug / "positioning-brief.json"
     if not brief_path.exists():
