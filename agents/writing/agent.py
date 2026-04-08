@@ -9,6 +9,9 @@ _project_root = Path(__file__).resolve().parents[2]
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
+import re
+import anthropic as _anthropic
+
 from agents.strategy.session import Session
 
 
@@ -355,3 +358,66 @@ def load_positioning_brief(creator_slug: str, base_dir: Path = None) -> dict:
         )
         sys.exit(1)
     return json.loads(brief_path.read_text(encoding="utf-8"))
+
+
+def run_tastemaker(content_pack: str, brief: dict, client=None) -> str:
+    """Run the Tastemaker Protocol prompt and return the full voice profile markdown.
+
+    Streams output to console so the operator can watch progress.
+    Returns the complete accumulated text.
+    """
+    if client is None:
+        client = _anthropic.Anthropic()
+
+    creator_context = (
+        f"Archetype: {brief.get('creator_archetype', {}).get('primary', 'Unknown')}\n"
+        f"Niche: {brief.get('niche_umbrella', 'Unknown')}\n"
+        f"Target reader: {brief.get('target_reader', 'Unknown')}"
+    )
+
+    prompt = TASTEMAKER_PROMPT.format(
+        creator_context=creator_context,
+        content_pack=content_pack,
+    )
+
+    accumulated = []
+    with client.messages.stream(
+        model="claude-opus-4-6",
+        max_tokens=8192,
+        messages=[{"role": "user", "content": prompt}],
+    ) as stream:
+        for text in stream.text_stream:
+            print(text, end="", flush=True)
+            accumulated.append(text)
+
+    print()  # newline after streaming completes
+    return "".join(accumulated)
+
+
+def extract_voice_profile_json(voice_profile_md: str, client=None) -> dict:
+    """Extract structured JSON from the voice profile markdown.
+
+    Uses a lightweight claude-sonnet-4-6 call. Raises RuntimeError if
+    the model returns malformed JSON.
+    """
+    if client is None:
+        client = _anthropic.Anthropic()
+
+    prompt = JSON_EXTRACTION_PROMPT.format(voice_profile_md=voice_profile_md)
+
+    message = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=4096,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    raw = message.content[0].text.strip()
+    raw = re.sub(r"^```[a-zA-Z]*\n?", "", raw)
+    raw = re.sub(r"\n?```$", "", raw)
+
+    try:
+        return json.loads(raw.strip())
+    except json.JSONDecodeError as e:
+        raise RuntimeError(
+            f"JSON parse error extracting voice profile structure: {e}\n\nRaw output:\n{raw[:500]}"
+        ) from e

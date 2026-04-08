@@ -129,3 +129,15 @@ def test_load_positioning_brief_found(tmp_path):
     (brief_dir / "positioning-brief.json").write_text(json.dumps(brief), encoding="utf-8")
     result = load_positioning_brief("test-creator", base_dir=tmp_path)
     assert result["newsletter_name"] == ["The Clean Label"]
+
+
+from unittest.mock import MagicMock
+from agents.writing.agent import extract_voice_profile_json
+
+
+def test_extract_voice_profile_json_malformed_raises():
+    mock_client = MagicMock()
+    mock_client.messages.create.return_value.content = [MagicMock(text="not valid json {{{{")]
+
+    with pytest.raises(RuntimeError, match="JSON parse error"):
+        extract_voice_profile_json("some profile text", client=mock_client)
