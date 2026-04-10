@@ -47,5 +47,5 @@ class Session:
 
     def save_brief_json(self, brief: dict):
         self._dir.mkdir(parents=True, exist_ok=True)
-        path = self._dir / "positioning-brief.json"
+        path = self._dir / "strategy-brief.json"
         path.write_text(json.dumps(brief, indent=2, ensure_ascii=False), encoding="utf-8")

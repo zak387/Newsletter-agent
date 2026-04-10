@@ -1,0 +1,36 @@
+{
+  "newsletter_name": [
+    "Gut Feelings"
+  ],
+  "newsletter_name_rationale": [
+    "Speaks directly to the gut healing angle while capturing the intuitive, non-dogmatic tone of the newsletter — eating freely without fear or confusion, grounded in real gut health outcomes."
+  ],
+  "niche_umbrella": "Personal transformation > gut healing + healthy eating",
+  "niche_rationale": "Health-conscious everyday grocery shoppers who want to eat freely without fear or confusion and heal their gut. The sub-niche sits at the intersection of gut health recovery and practical clean eating — not an ideology, a way of living.",
+  "target_reader": "A person in their late 20s to early 40s who wants to eat cleaner but feels paralysed at the grocery store and has burned out on strict diets. Not looking for a new ideology — wants a practical, non-punishing framework for a normal week.",
+  "newsletter_statement": "This newsletter helps health-conscious people achieve confidence in what they put in their bodies by decoding food labels, cutting through the tribalism of diet culture, and delivering a practical, balanced clean-eating framework built from one person's experience managing a chronic illness through food.",
+  "why_exist": "51% of consumers now actively seek clean label products and the market is projected to reach $212B by 2035. Diet culture has fractured into competing dogmas that leave the majority of health-curious people without a practical middle path. No major independent newsletter occupies the intersection of chronic illness recovery, ingredient transparency, and a balanced, non-ideological approach.",
+  "why_creator": "Kyle managed Crohn's Disease through food after his doctor said diet didn't matter. His podcast gives him direct access to F&B founders — he understands how food products are made and marketed from the inside. His credibility is earned through lived experience and industry access, not formal credentials.",
+  "content_pillars": [
+    {
+      "name": "Label School",
+      "description": "Decoding any food label in under 60 seconds — spotting hidden additives, misleading health claims, and ingredient red flags. Eliminates grocery aisle paralysis."
+    },
+    {
+      "name": "The Clean Swap",
+      "description": "Specific product swaps replacing processed staples with the exact alternatives Kyle has personally evaluated. Reduces friction between wanting to eat clean and actually doing it."
+    },
+    {
+      "name": "Balance Over Perfection",
+      "description": "A counter-narrative to diet culture rigidity — clean eating as a sustainable practice built on judgment and flexibility, not rules and restriction."
+    }
+  ],
+  "creator_archetype": {
+    "primary": "Experimenter",
+    "secondary": "Expert",
+    "evidence": "Tested clean eating on his own chronic illness and documented results publicly. Podcast access to F&B founders adds industry knowledge most experimenters lack."
+  },
+  "business_model": "Backend coaching. Kyle has an existing email list of ~15,000 subscribers — the newsletter's job is to deepen trust and move qualified readers into a coaching offer. Affiliates and sponsorships remain secondary revenue, but the primary monetisation mechanism is a coaching programme sold to the warmest segment of the list.",
+  "competitor_insight": "The newsletter landscape in clean eating is thin at the creator level. Dan Go owns body transformation for entrepreneurs. Elizabeth Rider covers clean eating but is recipe-forward. White space: ingredient-transparency newsletter with a balanced, non-dogmatic approach — teaching people how to shop and think about food.",
+  "comparable_newsletter": "Dan Go — 4 Minute Fridays"
+}

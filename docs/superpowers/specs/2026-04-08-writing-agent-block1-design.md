@@ -9,8 +9,8 @@ Produce a complete voice profile for a creator by running the Tastemaker Protoco
 
 ## Prerequisites
 
-- Strategy agent must have been run for the creator. The writing agent reads `.agent/<creator-slug>/positioning-brief.json` before anything else.
-- If the positioning brief is missing, the agent exits with a clear error message naming the missing file and instructing the operator to run the strategy agent first.
+- Strategy agent must have been run for the creator. The writing agent reads `.agent/<creator-slug>/strategy-brief.json` before anything else.
+- If the strategy brief is missing, the agent exits with a clear error message naming the missing file and instructing the operator to run the strategy agent first.
 
 ---
 
@@ -37,9 +37,9 @@ Stored in `.agent/<creator-slug>/writing-learnings.json`. Applied on every regen
 
 ## Block 1 — Voice Extraction via the Tastemaker Protocol
 
-### Step 0 — Load positioning brief
+### Step 0 — Load strategy brief
 
-Reads `.agent/<creator-slug>/positioning-brief.json`. Prints a one-line confirmation to the console (newsletter name candidate, niche, archetype) so the operator can confirm the right creator is loaded before proceeding.
+Reads `.agent/<creator-slug>/strategy-brief.json`. Prints a one-line confirmation to the console (newsletter name candidate, niche, archetype) so the operator can confirm the right creator is loaded before proceeding.
 
 ### Step 1 — Content pack ingestion
 
@@ -61,7 +61,7 @@ After ingestion, the agent estimates token count (characters ÷ 4 as a conservat
 
 Injects the full content pack into the Tastemaker Protocol prompt (see prompt section below). Sends as a single Claude API call using `claude-opus-4-6` — this is a deep analysis task where quality takes priority over speed. Streams output to the console so the operator can see progress.
 
-The positioning brief context (archetype, niche, ICP) is prepended to the content pack injection so the model has creator context before running the 20-question analysis.
+The strategy brief context (archetype, niche, ICP) is prepended to the content pack injection so the model has creator context before running the 20-question analysis.
 
 ### Step 3 — Human review loop
 
@@ -84,7 +84,7 @@ On lock:
 
 ## Tastemaker Protocol Prompt
 
-The full prompt is embedded in the agent (not a separate file). The content pack is injected at the `[INSERT CREATOR CONTENT PACK HERE]` placeholder. The positioning brief summary (archetype, niche, ICP) is injected before the content pack with a short framing sentence.
+The full prompt is embedded in the agent (not a separate file). The content pack is injected at the `[INSERT CREATOR CONTENT PACK HERE]` placeholder. The strategy brief summary (archetype, niche, ICP) is injected before the content pack with a short framing sentence.
 
 The prompt text is the Tastemaker Protocol as specified — unchanged. The agent does not modify or summarise the prompt.
 
@@ -142,13 +142,13 @@ agents/
     agent.py            ← imports Session from agents.strategy.session directly
 
 .agent/<creator-slug>/
-  positioning-brief.json    ← read-only input (written by strategy agent)
+  strategy-brief.json    ← read-only input (written by strategy agent)
   writing-session.json      ← writing agent step state
   writing-learnings.json    ← feedback from review rounds
   voice-profile.json        ← canonical structured output
 
 briefs/<creator-slug>/
-  positioning-brief.md      ← written by strategy agent (not touched here)
+  strategy-brief.md      ← written by strategy agent (not touched here)
   voice-profile.md          ← written by writing agent Block 1
 ```
 
@@ -156,7 +156,7 @@ briefs/<creator-slug>/
 
 ## Error Handling
 
-- Missing positioning brief → exit with named file path and instruction to run strategy agent
+- Missing strategy brief → exit with named file path and instruction to run strategy agent
 - Unreadable content pack file → clear error, re-prompt for input method
 - Unsupported file format → list supported formats, re-prompt
 - Content pack over size threshold → warn, offer truncate or abort

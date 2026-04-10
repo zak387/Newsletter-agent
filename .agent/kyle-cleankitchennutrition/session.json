@@ -1,0 +1,108 @@
+{
+  "creator_slug": "kyle-cleankitchennutrition",
+  "created_at": "2026-04-07",
+  "last_updated": "2026-04-07",
+  "locked": true,
+  "step0_done": true,
+  "step1_done": true,
+  "step2_done": true,
+  "step3_done": true,
+  "step4_done": true,
+  "step5_done": true,
+  "niche_candidate": "Personal transformation > clean eating, ingredient transparency, grocery navigation, gut health",
+  "step0_result": {
+    "content_summary": "Kyle Fitzgerald runs Clean Kitchen Nutrition — a brand focused on ingredient transparency, clean eating, and grocery navigation. Founded April 2021 after leaving PwC as an Audit Associate. Content covers product reviews, grocery guides, supplement evaluation, and healthy lifestyle. Has a podcast (Clean Kitchen Podcast with brother Kevin) and a website with blog and Amazon affiliate store. Sells The Clean Eating Playbook ebook.",
+    "audience_signals": [
+      "Health-conscious consumers aged late 20s to early 40s",
+      "People with gut issues or chronic health conditions seeking dietary solutions",
+      "Millennial and Gen Z consumers who research ingredients before purchasing",
+      "Audience willing to purchase nutrition guidance (ebook: The Clean Eating Playbook)",
+      "1.5M+ social following across Instagram (774K) and TikTok (800K+)",
+      "Amazon affiliate audience actively purchasing health and nutrition products"
+    ],
+    "gaps_flagged": [
+      "Exact ebook price point not confirmed",
+      "Newsletter subscriber count not publicly available",
+      "Engagement rate not confirmed from public data"
+    ],
+    "category_suggestion": "Personal transformation",
+    "sub_niches": [
+      "Clean eating",
+      "Ingredient transparency / clean label",
+      "Grocery navigation",
+      "Gut health / Crohn's disease management",
+      "Meal prep",
+      "Supplement evaluation",
+      "Balanced eating / anti-diet-culture"
+    ]
+  },
+  "step2_result": {
+    "competitors": [
+      {
+        "name": "Dan Go — 4 Minute Fridays",
+        "platform": "beehiiv",
+        "positioning": "Body transformation and performance for entrepreneurs and high achievers. Fat loss, muscle, energy. 505K subscribers.",
+        "gaps": "Does not cover ingredient transparency, grocery shopping, or food literacy. Performance-focused, not health-curious or food-education-focused."
+      },
+      {
+        "name": "Elizabeth Rider Newsletter",
+        "platform": "Substack",
+        "positioning": "Clean eating with a recipe and lifestyle focus. Metabolic health angle.",
+        "gaps": "Recipe-first, not education-first. Does not teach grocery navigation or label reading at depth."
+      },
+      {
+        "name": "Nest Wellness",
+        "platform": "Substack",
+        "positioning": "Blood sugar-friendly whole food recipes, gluten-free, dairy-free.",
+        "gaps": "Narrow audience (dietary restriction-specific). Not broadly applicable to clean eating beginners."
+      },
+      {
+        "name": "Clean Eating Magazine",
+        "platform": "Proprietary",
+        "positioning": "Legacy media brand. Broad healthy eating content.",
+        "gaps": "No personal authority, no creator voice, no lived experience. Generic content lacking specificity."
+      },
+      {
+        "name": "Simply Fit Society",
+        "platform": "Unknown",
+        "positioning": "General health, fitness, and diet newsletter. 16,600 subscribers.",
+        "gaps": "Broad positioning. No specific angle on ingredients or grocery education."
+      }
+    ],
+    "gap_analysis": "No top-tier independent newsletter owns the intersection of chronic illness recovery, ingredient transparency, and grocery navigation. Most clean eating newsletters are recipe-forward or lifestyle-focused. Teaching readers how to evaluate food products — not how to cook them — is largely unclaimed.",
+    "niche_depth_recommendation": "Go deeper on ingredient transparency and grocery education. This sub-niche is uncrowded, growing, and maps directly to Kyle's existing content authority and personal story."
+  },
+  "step3_result": {
+    "filter_1_low_competition": {
+      "verdict": "PASS",
+      "reasoning": "No top-tier independent newsletter holds the specific intersection of chronic illness recovery, grocery-aisle education, and ingredient transparency. Kyle can realistically be top-three in this vertical.",
+      "ownable_frame": "The newsletter that teaches you how to shop and read labels — not just what to eat — grounded in real health stakes from a chronic illness origin story."
+    },
+    "filter_2_purchasing_power": {
+      "verdict": "CONFIRMED",
+      "signals_present": 3,
+      "signals": [
+        "Sells The Clean Eating Playbook ebook — direct paid product purchase signal from existing audience",
+        "Amazon affiliate store — audience actively buys health and nutrition products at premium price points",
+        "Clean label / organic food audience skews higher-income — Millennial and Gen Z premium purchasers who research ingredients before buying"
+      ]
+    },
+    "filter_3_identifiable_audience": {
+      "verdict": "CONFIRMED",
+      "reasoning": "774K Instagram + 800K TikTok following already in place. Audience defined by content type — health-conscious people who follow clean eating and ingredient evaluation content. No ambiguity."
+    },
+    "search_trajectory": "Rising. Clean label and ingredient transparency are moving from niche concern to mainstream consumer expectation. 51% of consumers actively seek clean label products as of 2025.",
+    "timing_verdict": "Strong. Consumer distrust of processed food and food labelling is accelerating. Regulatory pressure on food labelling (MAHA movement, FDA scrutiny of food dyes) is creating significant cultural tailwind.",
+    "saturation_signals": [
+      "General healthy eating content is highly saturated on social media",
+      "Recipe and meal prep content is crowded at the creator level"
+    ],
+    "purchasing_power_confirmed": true
+  },
+  "step4_result": {
+    "origin_story": "Diagnosed with Crohn's Disease in 2018 after years of worsening gut issues and lower back pain. His gastroenterologist told him diet had no meaningful role in managing the condition. He rejected that, spent three years independently researching every nutrition book, podcast, and article he could find, and managed his disease through food. In April 2021, he left his Audit Associate role at PwC to build Clean Kitchen Nutrition full-time with his sister Karly.",
+    "contrarian_belief": "Most people in the health and nutrition space get stuck in tribalism and rigidity — keto versus vegan versus carnivore — and end up punishing themselves when they fall off. Kyle believes clean eating does not require ideological commitment or perfection. A balanced, practical approach that does not make you feel bad for being human is more sustainable and more effective than any strict system.",
+    "hidden_credibility": "His podcast (Clean Kitchen Podcast) gives him direct access to founders and decision-makers inside the food and beverage industry. He understands how food products are made and marketed from the inside, which sharpens his ingredient evaluations beyond surface-level label reading. No formal nutrition credentials — authority is derived entirely from lived experience, independent research, and industry access through the podcast.",
+    "ideal_reader": "A person in their late 20s to early 40s who has started paying attention to what they eat — triggered by low energy, gut issues, or growing distrust of processed food — but has burned out on strict diets before. Overwhelmed at the grocery store. Wants to eat clean without turning their life upside down or feeling guilty every time they are not perfect."
+  }
+}

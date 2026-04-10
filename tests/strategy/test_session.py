@@ -34,7 +34,7 @@ def test_learnings_append_and_load(tmp_path):
 def test_save_brief_json(tmp_path):
     s = Session(creator_slug="test-creator", base_dir=tmp_path)
     s.save_brief_json({"newsletter_name": ["Option A", "Option B", "Option C"]})
-    brief_path = tmp_path / ".agent" / "test-creator" / "positioning-brief.json"
+    brief_path = tmp_path / ".agent" / "test-creator" / "strategy-brief.json"
     assert brief_path.exists()
     data = json.loads(brief_path.read_text())
     assert data["newsletter_name"][0] == "Option A"

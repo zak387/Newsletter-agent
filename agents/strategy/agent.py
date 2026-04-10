@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Strategy Agent — runs once per creator, produces a positioning brief."""
+"""Strategy Agent — runs once per creator, produces a strategy brief."""
 
 import argparse
 import json
@@ -13,6 +13,9 @@ import anthropic as _anthropic
 _project_root = Path(__file__).resolve().parents[2]
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
+
+from dotenv import load_dotenv
+load_dotenv(_project_root / ".env")
 
 from rich.console import Console
 from rich.panel import Panel
@@ -240,7 +243,7 @@ def step5_synthesise(
     if learnings:
         learnings_block = "\n\nPrevious revision learnings to apply:\n" + json.dumps(learnings, indent=2)
 
-    prompt = f"""You are synthesising a positioning brief for a newsletter creator. Use ALL of the research and intake data below to fill every field. Where you cannot confirm a field from the data, leave the value as null.
+    prompt = f"""You are synthesising a strategy brief for a newsletter creator. Use ALL of the research and intake data below to fill every field. Where you cannot confirm a field from the data, leave the value as null.
 
 Niche candidate: {niche_candidate}
 
@@ -329,7 +332,7 @@ def step6_review(
     while True:
         round_number += 1
         md = render_brief(brief)
-        console.print(Panel(md, title=f"Positioning Brief (Round {round_number})", style="white"))
+        console.print(Panel(md, title=f"Strategy Brief (Round {round_number})", style="white"))
 
         feedback = ask('Review the brief above. Type feedback to revise, or "lock it" to finalise')
 
@@ -354,7 +357,7 @@ def step6_review(
     # Write outputs
     briefs_dir = _project_root / "briefs" / creator_slug
     briefs_dir.mkdir(parents=True, exist_ok=True)
-    md_path = briefs_dir / "positioning-brief.md"
+    md_path = briefs_dir / "strategy-brief.md"
     md_path.write_text(render_brief(brief), encoding="utf-8")
 
     session.save_brief_json(brief)

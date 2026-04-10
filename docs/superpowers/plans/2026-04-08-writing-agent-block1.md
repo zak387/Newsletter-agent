@@ -293,12 +293,12 @@ git commit -m "feat: writing agent size guard"
 
 ---
 
-### Task 4: Session setup and positioning brief loading
+### Task 4: Session setup and strategy brief loading
 
 The `Session` class from `agents.strategy.session` is reused with a custom session filename (`writing-session.json`) and learnings filename (`writing-learnings.json`). This requires checking if `Session` supports custom filenames — it doesn't currently, so we use a thin subclass.
 
 **Files:**
-- Modify: `agents/writing/agent.py` — add `WritingSession`, `load_positioning_brief`
+- Modify: `agents/writing/agent.py` — add `WritingSession`, `load_strategy_brief`
 - Modify: `tests/writing/test_agent.py` — add tests
 
 - [ ] **Step 1: Check `Session.__init__` signature**
@@ -311,7 +311,7 @@ Append to `tests/writing/test_agent.py`:
 
 ```python
 import json
-from agents.writing.agent import WritingSession, load_positioning_brief
+from agents.writing.agent import WritingSession, load_strategy_brief
 
 
 def test_writing_session_uses_different_filenames(tmp_path):
@@ -324,29 +324,29 @@ def test_writing_session_uses_different_filenames(tmp_path):
     assert not (tmp_path / ".agent" / "test-creator" / "session.json").exists()
 
 
-def test_load_positioning_brief_missing(tmp_path):
+def test_load_strategy_brief_missing(tmp_path):
     with pytest.raises(SystemExit):
-        load_positioning_brief("test-creator", base_dir=tmp_path)
+        load_strategy_brief("test-creator", base_dir=tmp_path)
 
 
-def test_load_positioning_brief_found(tmp_path):
+def test_load_strategy_brief_found(tmp_path):
     brief_dir = tmp_path / ".agent" / "test-creator"
     brief_dir.mkdir(parents=True)
     brief = {"newsletter_name": ["The Clean Label"], "niche_umbrella": "Personal transformation > clean eating", "creator_archetype": {"primary": "Experimenter"}}
-    (brief_dir / "positioning-brief.json").write_text(json.dumps(brief), encoding="utf-8")
-    result = load_positioning_brief("test-creator", base_dir=tmp_path)
+    (brief_dir / "strategy-brief.json").write_text(json.dumps(brief), encoding="utf-8")
+    result = load_strategy_brief("test-creator", base_dir=tmp_path)
     assert result["newsletter_name"] == ["The Clean Label"]
 ```
 
 - [ ] **Step 3: Run tests to verify they fail**
 
 ```bash
-pytest tests/writing/test_agent.py::test_writing_session_uses_different_filenames tests/writing/test_agent.py::test_load_positioning_brief_missing tests/writing/test_agent.py::test_load_positioning_brief_found -v
+pytest tests/writing/test_agent.py::test_writing_session_uses_different_filenames tests/writing/test_agent.py::test_load_strategy_brief_missing tests/writing/test_agent.py::test_load_strategy_brief_found -v
 ```
 
 Expected: `FAILED` — import errors
 
-- [ ] **Step 4: Add `WritingSession` and `load_positioning_brief` to `agents/writing/agent.py`**
+- [ ] **Step 4: Add `WritingSession` and `load_strategy_brief` to `agents/writing/agent.py`**
 
 Add these imports at the top of the file (after the existing sys.path block):
 
@@ -378,16 +378,16 @@ class WritingSession(Session):
         super().save()
 
 
-def load_positioning_brief(creator_slug: str, base_dir: Path = None) -> dict:
-    """Load the positioning brief produced by the strategy agent.
+def load_strategy_brief(creator_slug: str, base_dir: Path = None) -> dict:
+    """Load the strategy brief produced by the strategy agent.
 
     Exits with a clear error if the file does not exist.
     """
     base = Path(base_dir).resolve() if base_dir else _project_root
-    brief_path = base / ".agent" / creator_slug / "positioning-brief.json"
+    brief_path = base / ".agent" / creator_slug / "strategy-brief.json"
     if not brief_path.exists():
         print(
-            f"\nERROR: Positioning brief not found at {brief_path}\n"
+            f"\nERROR: Strategy brief not found at {brief_path}\n"
             f"Run the strategy agent first:\n"
             f"  python agents/strategy/agent.py --creator {creator_slug}\n"
         )
@@ -407,7 +407,7 @@ Expected: all tests `PASSED`
 
 ```bash
 git add agents/writing/agent.py tests/writing/test_agent.py
-git commit -m "feat: writing agent session and positioning brief loading"
+git commit -m "feat: writing agent session and strategy brief loading"
 ```
 
 ---
@@ -987,8 +987,8 @@ def main():
 
     console.print(Panel(f"[bold green]Writing Agent[/bold green]\nCreator: {creator_slug}", style="green"))
 
-    # Load positioning brief — exits with error if missing
-    brief = load_positioning_brief(creator_slug)
+    # Load strategy brief — exits with error if missing
+    brief = load_strategy_brief(creator_slug)
     names = brief.get("newsletter_name") or ["—"]
     niche = brief.get("niche_umbrella") or "—"
     archetype = (brief.get("creator_archetype") or {}).get("primary") or "—"
@@ -1027,7 +1027,7 @@ Expected: all tests `PASSED`
 
 - [ ] **Step 3: Smoke test the agent CLI (dry run — check it starts and shows the brief)**
 
-First ensure a creator with a positioning brief exists (the `kyle-cleankitchennutrition` brief is already present from the strategy agent run):
+First ensure a creator with a strategy brief exists (the `kyle-cleankitchennutrition` brief is already present from the strategy agent run):
 
 ```bash
 python agents/writing/agent.py --creator kyle-cleankitchennutrition
@@ -1041,7 +1041,7 @@ Expected: Agent starts, prints the green header panel, prints the brief summary 
 python agents/writing/agent.py --creator nonexistent-creator
 ```
 
-Expected: prints `ERROR: Positioning brief not found at ...` and exits without a traceback.
+Expected: prints `ERROR: Strategy brief not found at ...` and exits without a traceback.
 
 - [ ] **Step 5: Commit**
 
@@ -1077,12 +1077,12 @@ Strategy agent tests live in `tests/strategy/`. They should be unaffected by the
 | Spec requirement | Task |
 |---|---|
 | Separate CLI (`agents/writing/agent.py`) | Task 7 |
-| Read positioning brief, exit if missing | Task 4 |
+| Read strategy brief, exit if missing | Task 4 |
 | File input (.md, .txt, .pdf) | Task 2 |
 | Direct paste input with END sentinel | Task 7 |
 | Size guard — warn, truncate or abort | Tasks 3 + 7 |
 | Run Tastemaker prompt with claude-opus-4-6, streaming | Task 6 |
-| Positioning brief context injected into prompt | Task 6 |
+| Strategy brief context injected into prompt | Task 6 |
 | Review loop with feedback stored to writing-learnings.json | Task 7 |
 | Write `briefs/<slug>/voice-profile.md` | Task 7 |
 | Write `.agent/<slug>/voice-profile.json` | Task 7 |
